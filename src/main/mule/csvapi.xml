@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="bce470e9-2b05-44ef-917f-5df8c89f5f9e" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="7c854687-5448-4f0a-b56a-bdfec276f861" >
+		<file:connection workingDir="G:\data\Documents\xmls\usha" />
+	</file:config>
+	<flow name="csvapiFlow" doc:id="a2e2a2f7-9e21-4416-bd21-08454ea2d3d4" >
+		<http:listener doc:name="Listener" doc:id="a670f7d3-fa78-4e5a-af3c-12a96274957e" config-ref="HTTP_Listener_config" path="/csv" allowedMethods="POST"/>
+		<set-variable value="#[payload.directoryPath]" doc:name="Set Variable" doc:id="80a5a877-88ac-44c9-b669-afd2b450bd01" variableName="directoryPath"/>
+		<file:list doc:name="List" doc:id="33e05c05-e923-409f-a5ee-ebde68c19313" config-ref="File_Config" directoryPath="#[vars.directoryPath]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="754c8a87-864d-4ae3-b1b1-0abfdcce9b30" message="#[payload]"/>
+		<set-variable value="#[payload[0].attributes.fileName]" doc:name="Set Variable" doc:id="31444ac3-585a-4bc3-8e04-94ae4c857517" variableName="filename"/>
+		<file:read doc:name="Read" doc:id="983a9d71-8539-4ee0-899a-24479307a766" config-ref="File_Config" path="#[vars.directoryPath ++ '/' ++ vars.fileName]"/>
+		<ee:transform doc:name="Transform Message" doc:id="a6043269-e4ad-4026-a408-a4e8cc517746" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="59a3ecf2-563a-4aa6-a079-bcdcd4de7937" message="#[payload]"/>
+		<file:move doc:name="Move" doc:id="3a8464be-4dd6-4e6c-8865-d3b7ed1cb324" config-ref="File_Config" sourcePath="#[vars.directoryPath ++ '/' ++ vars.fileName]" targetPath="#[vars.directoryPath ++ '/input']"/>
+	</flow>
+</mule>
